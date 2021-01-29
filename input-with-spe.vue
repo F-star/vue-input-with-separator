@@ -1,6 +1,7 @@
 <template>
-  <input 
-    :value="value"
+  <input
+    ref="input"
+    :value="innerValue"
     :maxlength="maxlength"
     @input="handleInput"
   >
@@ -8,14 +9,10 @@
 
 <script>
 export default {
-  data() {
-    return {
-      value: '',
-      maxlength: 0,
-      sepIdxs: [],
-    }
-  },
   props: {
+    value: {
+      type: String
+    },
     blocks: {
       type: Array, // [4, 4, 4, 4]
       require: true,
@@ -33,57 +30,56 @@ export default {
       default: false,
     }
   },
+  data() {
+    return {
+      innerValue: '',
+      maxlength: 0,
+      sepIdxs: [],
+    }
+  },
+  watch: {
+    // 用于初始化
+    value: {
+      handler(val, oldVal) {
+        if (!oldVal && val) {
+          this.setInputValue()
+        }
+      },
+      immediate: true
+    }
+  },
   created() {
     const sepCount = this.blocks.length - 1
     this.maxlength = this.blocks.reduce((prev, curr) => prev + curr, 0) + sepCount
-    
+
+    // 计算分隔符们的索引位置
     this.sepIdxs = new Array(sepCount)
     for (let i = 0; i < sepCount; i++) {
-      this.sepIdxs[i] = (this.sepIdxs[i - 1] || 0) + this.blocks[i] + i
+      this.sepIdxs[i] = (this.sepIdxs[i - 1] || -1) + this.blocks[i] + 1
     }
   },
   methods: {
     handleInput(e) {
-      /**
-       * 难点
-       * 1. 光标位置的控制
-       */
-
-      // 光标位置
-      console.log(e.target.selectionStart)
-      // remove space
       const val = e.target.value.replace(/\s/g, '')
-      console.log('|' + val + '|')
 
       const addedSepVal = this.addSep(val)
-      this.value = addedSepVal
+      this.innerValue = addedSepVal
       e.target.value = addedSepVal
-
-      // add space
-      // 提供一个字符串和一个指定位置插入
-      // const addSepVal = ''
-      
-      // 添加的情况
-      // if (val.length > this.value.length) {
-      //   console.log('append content')
-      //   const sepIdxs = this.sepIdxs
-      //   if (val.length > sepIdxs[0]) {
-      //     console.log('超过')
-      //     this.value = val.slice(0, sepIdxs[0]) + this.sep + val.slice(sepIdxs[0])
-      //   }
-      // }
+      this.$emit('input', val)
+    },
+    setInputValue() {
+      this.$refs.input.value = this.addSep(this.value)
     },
     addSep(str) {
-      this.sepIdxs.forEach(idx => {
-        //
-      })
+      for (let i = 0; i < str.length; i++) {
+        const idx = this.sepIdxs[i]
+        if (idx < str.length) {
+          str = str.slice(0, idx) + this.sep + str.slice(idx)
+        }
+      }
       return str
     }
   }
 }
 
 </script>
-
-<style>
-
-</style>
